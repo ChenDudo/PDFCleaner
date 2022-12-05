@@ -2,6 +2,7 @@
 # -*-coding:utf-8 -*-
 # @Author  : Chen Do
 
+import configparser
 from  PyPDF2 import PdfFileReader
 from  PyPDF2 import PdfWriter
 import os
@@ -9,6 +10,10 @@ import time
 import sys
 import io
 import datetime
+
+global NanjingAuthor
+global NanjingProducer
+global NanjingCreator
 
 NanjingAuthor   = "Firmware Development Group"
 NanjingProducer = "MindMotion Nanjing Ecosystem"
@@ -40,6 +45,10 @@ class Logger(object):
 
 def handle_doc(outputfilepath, filepath, filename):
     global handle_num
+    global NanjingAuthor
+    global NanjingProducer
+    global NanjingCreator
+
     readfilepath = filepath + '\\' + filename
     outputfilepath = outputfilepath + '\\' + filename
 
@@ -56,7 +65,7 @@ def handle_doc(outputfilepath, filepath, filename):
     l_creation_data_raw = str(meta.creation_date_raw)
     l_modification_date_raw = str(meta.modification_date_raw)
 
-    if (meta.producer == NanjingProducer):
+    if (meta.producer == NanjingProducer) and (meta.author == NanjingAuthor) and (meta.creator == NanjingCreator):
         print("[WARN]\t\""+filename+'\" needn\'t to change!')
         return
 
@@ -85,36 +94,71 @@ def handle_doc(outputfilepath, filepath, filename):
     output_file.append(outputfilepath)
 
 
+''' (config.ini) file module:
+[global]
+NanjingAuthor   = 'Firmware Development Group'
+NanjingProducer = 'MindMotion Nanjing Ecosystem'
+NanjingCreator  = 'Chen Do'
+'''
+def read_config_file(filepath):
+    global NanjingAuthor
+    global NanjingProducer
+    global NanjingCreator
+    conf_file = filepath + "\\config.ini"
+
+    conf = configparser.ConfigParser()
+    
+    if os.path.exists(conf_file):
+        conf.read(conf_file)
+        NanjingAuthor   = eval(conf.get("global", "NanjingAuthor"))
+        NanjingProducer = eval(conf.get("global", "NanjingProducer"))
+        NanjingCreator  = eval(conf.get("global", "NanjingCreator"))
+    else:
+        print("[ERROR]\tNo Config files, Use default config")
+        # NanjingAuthor   = "Firmware Development Group"
+        # NanjingProducer = "MindMotion Nanjing Ecosystem"
+        # NanjingCreator  = "Chen Do"
+
+
 if __name__ == "__main__":
+    # parameter init
     path_files = os.getcwd()
     output_filepath = path_files + '\\output'
     log_filepath = path_files + '\\log'
     i = 0
 
+    # get begin time
     time_start = time.time()
-
+    
+    # configure Log file
     if not os.path.exists(log_filepath):
         os.makedirs(log_filepath)
-
     sys.stdout = Logger('PdfCleaner_' + create_detail_day() + '.log', path=log_filepath)
     print(create_detail_day().center(60,'*'))
+
+    # read config.ini file
+    read_config_file(path_files)
 
     # get current file path
     # path_files = os.path.dirname(os.path.abspath(__file__))+'\\doc'
     # path_files = os.path.dirname(os.path.abspath(__file__))
 
+    # configure Output file
     if not os.path.exists(output_filepath):
         print("[WARN]\tLack of output files dir, Doing...")
         os.makedirs(output_filepath)
-
     print('[INFO]\tOutput Dir: ' + output_filepath)
 
+    # Handle PDF files
     for filepath, dirnames, filenames in os.walk(path_files):
         for filename in filenames:
             handle_doc(output_filepath, filepath, filename)
 
+    # get finish time
     time_end = time.time()
     time_sum = time_end - time_start
+
+    # other handle
     print("[INFO]\tTotal Speed Time: %.2f s; Handle PDF: %d file(s)" %(time_sum, handle_num))
     if handle_num == 0:
         os.rmdir(output_filepath)
