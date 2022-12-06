@@ -32,7 +32,7 @@ def create_detail_day():
 
 class Logger(object):
     def __init__(self, filename="Default.log", path=".\\"):
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         self.terminal = sys.stdout
         self.log = open(os.path.join(path, filename), "a", encoding='utf8')
 
@@ -87,7 +87,7 @@ def handle_doc(outputfilepath, filepath, filename):
     # Save the new PDF to a file
     with open(outputfilepath, "wb") as f:
         writer.write(f)
-        print('[INFO]\t'+'*'*12+'\t\"'+filename+"\" Done!\t"+'*'*12)
+        print('[INFO]\t'+'\"'+filename+"\" Done! "+'*'*36)
 
     # decoder handle number
     handle_num = handle_num + 1
@@ -110,14 +110,25 @@ def read_config_file(filepath):
     
     if os.path.exists(conf_file):
         conf.read(conf_file)
-        NanjingAuthor   = eval(conf.get("global", "NanjingAuthor"))
-        NanjingProducer = eval(conf.get("global", "NanjingProducer"))
-        NanjingCreator  = eval(conf.get("global", "NanjingCreator"))
+        if not "global" in conf:
+            print("[WARN]\tNo global section in config file")
+            pass
+        else:
+            if 'NanjingAuthor' in conf['global']:
+                NanjingAuthor   = eval(conf.get("global", "NanjingAuthor"))
+            if 'NanjingProducer' in conf["global"]:
+                NanjingProducer = eval(conf.get("global", "NanjingProducer"))
+            if 'NanjingCreator' in conf["global"]:
+                NanjingCreator  = eval(conf.get("global", "NanjingCreator"))
     else:
         print("[ERROR]\tNo Config files, Use default config")
         # NanjingAuthor   = "Firmware Development Group"
         # NanjingProducer = "MindMotion Nanjing Ecosystem"
         # NanjingCreator  = "Chen Do"
+    print("[info]\tNow Use following Config :")
+    print("\t[Author]: " + NanjingAuthor)
+    print("\t[Producer]: " + NanjingProducer)
+    print("\t[Creator]: " + NanjingCreator)
 
 
 if __name__ == "__main__":
@@ -152,7 +163,8 @@ if __name__ == "__main__":
     # Handle PDF files
     for filepath, dirnames, filenames in os.walk(path_files):
         for filename in filenames:
-            handle_doc(output_filepath, filepath, filename)
+            if filename.endswith(".pdf"):
+                handle_doc(output_filepath, filepath, filename)
 
     # get finish time
     time_end = time.time()
